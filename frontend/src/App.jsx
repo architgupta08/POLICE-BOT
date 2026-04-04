@@ -1,15 +1,28 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './styles/main.css';
 import ChatWindow from './components/ChatWindow';
 import ChatHistory from './components/ChatHistory';
+import LoginPage from './components/LoginPage';
+import SignupPage from './components/SignupPage';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { getHealth } from './services/api';
 
-function App() {
+// ── Protected route wrapper ──────────────────────────────────────────────────
+
+function ProtectedRoute({ children }) {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
+}
+
+// ── Main app shell (shown when logged in) ────────────────────────────────────
+
+function AppShell() {
+  const { user, logout } = useAuth();
   const [activeSessionId, setActiveSessionId] = useState(null);
   const [historyRefresh, setHistoryRefresh] = useState(0);
-  const [serverStatus, setServerStatus] = useState('checking'); // 'checking' | 'online' | 'offline'
+  const [serverStatus, setServerStatus] = useState('checking');
 
-  // Poll server health on mount
   useEffect(() => {
     const check = async () => {
       try {
@@ -26,7 +39,6 @@ function App() {
 
   const handleSessionCreated = useCallback((id) => {
     setActiveSessionId(id);
-    // Trigger sidebar refresh whenever a new session is saved
     setHistoryRefresh((n) => n + 1);
   }, []);
 
@@ -47,7 +59,6 @@ function App() {
 
   return (
     <div className="app">
-      {/* ── Header ── */}
       <header className="app-header">
         <div>
           <div className="header-logo">
@@ -56,13 +67,22 @@ function App() {
           </div>
           <div className="header-subtitle">Legal Guidance System for Police Officers</div>
         </div>
-        <div className="header-status">
-          <span className={`status-dot ${serverStatus}`} />
-          <span>{statusLabel}</span>
+        <div className="header-right">
+          <div className="header-status">
+            <span className={`status-dot ${serverStatus}`} />
+            <span>{statusLabel}</span>
+          </div>
+          {user && (
+            <div className="header-user">
+              <span className="user-email" title={user.email}>👮 {user.email}</span>
+              <button className="btn-logout" onClick={logout} title="Sign out">
+                Sign out
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
-      {/* ── Body ── */}
       <div className="app-body">
         <ChatHistory
           activeSessionId={activeSessionId}
@@ -76,6 +96,30 @@ function App() {
         />
       </div>
     </div>
+  );
+}
+
+// ── Root component ───────────────────────────────────────────────────────────
+
+function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <AppShell />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

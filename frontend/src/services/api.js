@@ -2,11 +2,58 @@ import axios from 'axios';
 
 const BASE_URL = process.env.REACT_APP_API_URL || '';
 
+const TOKEN_KEY = 'police_bot_token';
+
 const api = axios.create({
   baseURL: BASE_URL,
   timeout: 120000,
   headers: { 'Content-Type': 'application/json' },
 });
+
+// Attach JWT token to every request when available
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// ─── Authentication ───────────────────────────────────────────────────────────
+
+/**
+ * Register a new user.
+ * @param {string} email
+ * @param {string} password
+ * @returns {Promise<{access_token:string, token_type:string, user_id:number, email:string}>}
+ */
+export const signupUser = async (email, password) => {
+  const response = await api.post('/auth/signup', { email, password });
+  return response.data;
+};
+
+/**
+ * Login with email and password.
+ * @param {string} email
+ * @param {string} password
+ * @returns {Promise<{access_token:string, token_type:string, user_id:number, email:string}>}
+ */
+export const loginUser = async (email, password) => {
+  const response = await api.post('/auth/login', { email, password });
+  return response.data;
+};
+
+/** Logout (server-side – client should also clear the token). */
+export const logoutUser = async () => {
+  const response = await api.post('/auth/logout');
+  return response.data;
+};
+
+/** Fetch the currently authenticated user's profile. */
+export const getMe = async () => {
+  const response = await api.get('/auth/me');
+  return response.data;
+};
 
 // ─── Chat ────────────────────────────────────────────────────────────────────
 
