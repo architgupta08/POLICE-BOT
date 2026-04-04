@@ -19,6 +19,23 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Handle 401 Unauthorized responses: clear stored credentials and redirect to login
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem('police_bot_user');
+      // Only redirect if not already on an auth page to avoid redirect loops
+      if (!window.location.pathname.startsWith('/login') &&
+          !window.location.pathname.startsWith('/signup')) {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 // ─── Authentication ───────────────────────────────────────────────────────────
 
 /**
