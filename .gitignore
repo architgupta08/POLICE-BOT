@@ -23,6 +23,9 @@ htmlcov/
 # Logs
 logs/
 
+# Chroma vector DB (local data – do not commit)
+data/chroma_db/
+
 # Case history (local user data – do not commit)
 data/case_history/
 
