@@ -10,6 +10,8 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Any
 
+import httpx
+
 from fastapi import Depends, FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
@@ -81,13 +83,10 @@ async def lifespan(app: FastAPI):
                 llm.model,
             )
             try:
-                import httpx as _httpx
-
-                with _httpx.Client(timeout=600.0) as _client:
+                with httpx.Client(timeout=600.0) as _client:
                     _client.post(
                         f"{llm.base_url}/api/pull",
                         json={"name": llm.model},
-                        timeout=600.0,
                     ).raise_for_status()
                 logger.info("Model '%s' pulled successfully", llm.model)
             except Exception as exc:  # noqa: BLE001
