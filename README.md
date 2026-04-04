@@ -1,6 +1,6 @@
 # 🚔 POLICE-BOT — NDPS Legal Guidance System
 
-A fully-functional AI-powered web application that provides **real-time legal guidance** to police officers on the **Narcotic Drugs and Psychotropic Substances (NDPS) Act** of India.  The system uses a local LLM (Mistral 7B via Ollama) combined with Retrieval-Augmented Generation (RAG) over your existing **Chroma DB** and **knowledge-graph JSON**.
+A fully-functional AI-powered web application that provides **real-time legal guidance** to police officers on the **Narcotic Drugs and Psychotropic Substances (NDPS) Act** of India.  The system supports both local (Ollama) and cloud (Hugging Face) LLM backends, JWT-based user authentication, and one-click deployment to **Render + Vercel**.
 
 ---
 
@@ -10,12 +10,12 @@ A fully-functional AI-powered web application that provides **real-time legal gu
 |---|---|
 | 💬 **Conversational Chat** | Ask questions in plain language and get structured, legal answers |
 | 📚 **RAG Pipeline** | Retrieves the most relevant NDPS documents from your knowledge base before answering |
-| 🧠 **Local LLM** | Mistral 7B via Ollama — fully offline, no API keys, no data leaves your machine |
+| 🧠 **Dual LLM Backend** | Local Ollama (offline) **or** Hugging Face Inference API (cloud) |
+| 🔐 **JWT Authentication** | User signup/login with bcrypt password hashing and JWT sessions |
 | 📋 **Case History** | All sessions are saved automatically; switch between them from the sidebar |
 | 📄 **PDF Export** | Export any conversation as a formatted PDF for official records |
 | 🔗 **Source Citations** | Every answer shows which knowledge-base document was used |
-| ⚡ **8 GB RAM Optimized** | Mistral 7B runs comfortably on machines with Intel UHD Graphics |
-| 🔒 **Offline-first** | No internet connection required after initial setup |
+| ☁️ **Cloud Deployable** | Ready to deploy on Render (backend) + Vercel (frontend) |
 
 ---
 
@@ -25,38 +25,42 @@ A fully-functional AI-powered web application that provides **real-time legal gu
 POLICE-BOT/
 ├── backend/
 │   ├── main.py            # FastAPI application + API routes
+│   ├── auth.py            # JWT utilities + FastAPI dependency
+│   ├── database.py        # SQLite user database
+│   ├── hf_handler.py      # Hugging Face Inference API LLM handler
+│   ├── llm_handler.py     # Ollama / Mistral 7B handler (local)
 │   ├── rag_pipeline.py    # RAG logic: Chroma DB + knowledge-graph retrieval
-│   ├── llm_handler.py     # Ollama / Mistral 7B integration
 │   ├── config.py          # All configuration (reads from .env)
 │   └── utils.py           # PDF export, session helpers, logging
 ├── frontend/
 │   ├── src/
-│   │   ├── App.jsx                      # Root component
+│   │   ├── App.jsx                      # Root component + routing
+│   │   ├── context/
+│   │   │   └── AuthContext.jsx          # Auth state (login/signup/logout)
 │   │   ├── components/
+│   │   │   ├── LoginPage.jsx            # Login form
+│   │   │   ├── SignupPage.jsx           # Signup form
 │   │   │   ├── ChatWindow.jsx           # Main chat UI
 │   │   │   ├── ChatHistory.jsx          # Session sidebar
 │   │   │   ├── SourceCitations.jsx      # Source tags below bot answers
 │   │   │   └── ExportPDF.jsx            # PDF export button
 │   │   ├── services/
-│   │   │   └── api.js                   # Axios wrapper for the backend API
-│   │   ├── styles/
-│   │   │   └── main.css                 # All CSS (variables, layout, dark themes)
-│   │   └── index.js
-│   ├── public/index.html
+│   │   │   └── api.js                   # Axios wrapper (with Auth header)
+│   │   └── styles/main.css
+│   ├── vercel.json                      # Vercel deployment config
 │   └── package.json
 ├── data/
 │   ├── chroma_db/          # ← Copy your Chroma DB here
 │   └── knowledge_graph.json # ← Copy your knowledge graph here
 ├── requirements.txt
+├── render.yaml             # Render deployment config
 ├── .env.example
-├── setup.bat               # One-click setup for Windows
-├── setup.sh                # One-click setup for Linux/macOS
-└── README.md               # This file
+└── README.md
 ```
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start (Local)
 
 ### Prerequisites
 
@@ -64,161 +68,113 @@ POLICE-BOT/
 |---|---|---|
 | Python | 3.10 + | https://python.org |
 | Node.js | 18 + | https://nodejs.org |
-| Ollama | latest | https://ollama.ai/download |
-
----
+| Ollama | latest (optional) | https://ollama.ai/download |
 
 ### Step 1 — Copy your data files
 
-```
-# Windows
-xcopy /E /I "D:\POLICE BOT\chroma_db" "data\chroma_db"
-copy "D:\POLICE BOT\knowledge_graph.json" "data\knowledge_graph.json"
-
+```bash
 # Linux / macOS
 cp -r "/path/to/chroma_db" data/
 cp "/path/to/knowledge_graph.json" data/
-```
 
-> ⚠️ The application will still start without the data files (the RAG pipeline falls back gracefully), but answers will not be grounded in your NDPS knowledge base.
-
----
-
-### Step 2 — Install Ollama & pull the model
-
-```bash
-# macOS / Linux
-curl -fsSL https://ollama.ai/install.sh | sh
-
-# Windows: download installer from https://ollama.ai/download
-
-# Pull the Mistral 7B model (≈4 GB, one-time download)
-ollama pull mistral
-```
-
----
-
-### Step 3 — Run the setup script
-
-**Windows:**
-```bat
-setup.bat
-```
-
-**Linux / macOS:**
-```bash
-chmod +x setup.sh && ./setup.sh
-```
-
-The script will:
-- Check for Python & Node.js
-- Create a `.env` file from `.env.example`
-- Create a Python virtual environment
-- Install all Python dependencies
-- Install all npm dependencies
-
----
-
-### Step 4 — Configure `.env`
-
-Open the `.env` file and verify the paths:
-
-```dotenv
-CHROMA_DB_PATH=./data/chroma_db
-KNOWLEDGE_GRAPH_PATH=./data/knowledge_graph.json
-OLLAMA_MODEL=mistral
-```
-
-If your `chroma_db` is in a different location (e.g. `D:\POLICE BOT\chroma_db`), set the full absolute path:
-
-```dotenv
-CHROMA_DB_PATH=D:\POLICE BOT\chroma_db
-KNOWLEDGE_GRAPH_PATH=D:\POLICE BOT\knowledge_graph.json
-```
-
----
-
-### Step 5 — Start the services
-
-**Terminal 1 — Ollama:**
-```bash
-ollama serve
-```
-
-**Terminal 2 — FastAPI backend:**
-```bash
 # Windows
-venv\Scripts\activate
-cd backend
-uvicorn main:app --reload --port 8000
+xcopy /E /I "D:\POLICE BOT\chroma_db" "data\chroma_db"
+copy "D:\POLICE BOT\knowledge_graph.json" "data\knowledge_graph.json"
+```
 
-# Linux / macOS
-source venv/bin/activate
+### Step 2 — Configure environment
+
+```bash
+cp .env.example .env
+# Edit .env — set LLM_BACKEND, JWT_SECRET_KEY, and optionally HF_API_TOKEN
+```
+
+### Step 3 — Run setup
+
+**Windows:** `setup.bat`  
+**Linux / macOS:** `chmod +x setup.sh && ./setup.sh`
+
+### Step 4 — Start services
+
+**Terminal 1 — Backend:**
+```bash
+source venv/bin/activate   # Windows: venv\Scripts\activate
 cd backend
 uvicorn main:app --reload --port 8000
 ```
 
-**Terminal 3 — React frontend:**
+**Terminal 2 — Frontend:**
 ```bash
 cd frontend
 npm start
 ```
 
-Open **http://localhost:3000** in your browser. 🎉
+Open **http://localhost:3000** — sign up for an account to start chatting. 🎉
+
+> **Dev mode:** `DEV_MODE=true` (the default) makes authentication optional so you can test without signing up.
+
+---
+
+## ☁️ Cloud Deployment (Render + Vercel)
+
+### Backend → Render
+
+1. Create a free account at https://render.com and link your GitHub repo.
+2. Render will auto-detect `render.yaml` and create the service.
+3. In the Render dashboard → **Environment** tab, add:
+   - `HF_API_TOKEN` — your Hugging Face token (https://huggingface.co/settings/tokens)
+4. Your backend URL will be: `https://police-bot-backend.onrender.com`
+
+### Frontend → Vercel
+
+1. Create a free account at https://vercel.com and import the GitHub repo.
+2. Set the **Root Directory** to `frontend`.
+3. Add environment variable in the Vercel dashboard:
+   - `REACT_APP_API_URL` → `https://police-bot-backend.onrender.com`
+4. Your frontend URL will be: `https://police-bot.vercel.app`
+
+### After both are deployed
+
+Update `render.yaml` → `CORS_ORIGINS` to your Vercel URL, then redeploy the backend.
 
 ---
 
 ## 🔌 API Reference
 
-The backend exposes the following REST endpoints:
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/health` | No | Server + LLM + RAG status |
+| POST | `/auth/signup` | No | Register a new user, returns JWT |
+| POST | `/auth/login` | No | Login, returns JWT |
+| POST | `/auth/logout` | No | Logout (client clears token) |
+| GET | `/auth/me` | JWT | Current user profile |
+| POST | `/api/chat` | JWT* | Send a message, get an answer |
+| GET | `/api/sessions` | JWT* | List saved chat sessions |
+| GET | `/api/sessions/{id}` | JWT* | Full message history |
+| DELETE | `/api/sessions/{id}` | JWT* | Delete a session |
+| GET | `/api/sessions/{id}/export/pdf` | JWT* | Download session as PDF |
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/health` | Server + Ollama + RAG status |
-| POST | `/api/chat` | Send a message, get an answer + sources |
-| GET | `/api/sessions` | List all saved chat sessions |
-| GET | `/api/sessions/{id}` | Retrieve full message history |
-| DELETE | `/api/sessions/{id}` | Delete a session |
-| GET | `/api/sessions/{id}/export/pdf` | Download session as PDF |
-
-### Chat request body
-
-```json
-{
-  "message": "What is the punishment for drug possession?",
-  "session_id": null,
-  "top_k": 5
-}
-```
-
-### Chat response
-
-```json
-{
-  "session_id": "uuid-...",
-  "answer": "Under Section 20 of the NDPS Act...",
-  "sources": ["ndps_act.pdf – Section 20 – Page 14"],
-  "timestamp": "2024-01-15 10:30 UTC"
-}
-```
+*JWT required unless `DEV_MODE=true`.
 
 ---
 
 ## ⚙️ Configuration Reference
 
-All settings live in `.env` (copy from `.env.example`):
-
 | Variable | Default | Description |
 |---|---|---|
+| `LLM_BACKEND` | `ollama` | `ollama` (local) or `huggingface` (cloud) |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server URL |
+| `OLLAMA_MODEL` | `mistral` | Ollama model name |
+| `HF_API_TOKEN` | *(empty)* | Hugging Face API token (cloud) |
+| `HF_MODEL` | `mistralai/Mistral-7B-Instruct-v0.2` | HF model ID |
+| `JWT_SECRET_KEY` | auto-generated | Secret for signing JWT tokens |
+| `JWT_EXPIRE_MINUTES` | `60` | Token expiry in minutes |
+| `DEV_MODE` | `true` | If `true`, auth is optional (local dev only) |
+| `DATABASE_PATH` | `./data/police_bot.db` | SQLite database file |
 | `CHROMA_DB_PATH` | `./data/chroma_db` | Path to Chroma DB folder |
 | `KNOWLEDGE_GRAPH_PATH` | `./data/knowledge_graph.json` | Path to knowledge graph JSON |
 | `CASE_HISTORY_DIR` | `./data/case_history` | Where session JSON files are stored |
-| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server URL |
-| `OLLAMA_MODEL` | `mistral` | Model to use |
-| `CHROMA_COLLECTION_NAME` | `ndps_documents` | Chroma collection name |
-| `RAG_TOP_K` | `5` | Number of documents to retrieve per query |
-| `RAG_SIMILARITY_THRESHOLD` | `0.3` | Minimum cosine similarity for retrieval |
-| `CORS_ORIGINS` | `http://localhost:3000` | Allowed CORS origins |
+| `CORS_ORIGINS` | `http://localhost:3000` | Allowed CORS origins (comma-separated) |
 | `LOG_LEVEL` | `INFO` | Logging verbosity |
 
 ---
@@ -228,53 +184,45 @@ All settings live in `.env` (copy from `.env.example`):
 ### "Ollama server is not running"
 Start it: `ollama serve`
 
-### "Model 'mistral' is not available"
-Pull it: `ollama pull mistral`
+### "HF_API_TOKEN is not set"
+Add your Hugging Face token to `.env` or to Render's environment variables.
 
 ### Backend shows "0 documents in Chroma DB"
 - Make sure you copied the `chroma_db` folder correctly.
 - Check `CHROMA_DB_PATH` in `.env` — use the full absolute path if needed.
-- Verify the collection name matches (`CHROMA_COLLECTION_NAME`).
 
 ### Frontend can't reach the backend
-- Check the backend is running on port 8000.
-- The `frontend/package.json` has `"proxy": "http://localhost:8000"` set.
-- Check `CORS_ORIGINS` in `.env`.
+- Backend must be running on port 8000 locally.
+- In production, set `REACT_APP_API_URL` in Vercel to your Render backend URL.
+- Check `CORS_ORIGINS` includes your frontend URL.
 
-### Slow responses on 8 GB RAM
+### Slow responses (8 GB RAM + Ollama)
 - Mistral 7B uses ≈5–6 GB RAM; close other applications.
-- Reduce `RAG_TOP_K` to `3` to shorten the context fed to the LLM.
-
----
-
-## 📋 System Requirements
-
-| Component | Minimum | Recommended |
-|---|---|---|
-| RAM | 8 GB | 16 GB |
-| Storage | 10 GB free | 20 GB free |
-| CPU | Any modern quad-core | Intel i5/i7 8th gen+ |
-| GPU | CPU inference (Intel UHD OK) | NVIDIA GPU (faster) |
-| OS | Windows 10/11, Ubuntu 20.04+, macOS 12+ | - |
+- Or switch to `LLM_BACKEND=huggingface` for serverless inference.
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-  Browser (React)
-       │  HTTP
+  Browser (React + Auth)
+       │  HTTP + Bearer JWT
        ▼
   FastAPI Backend (port 8000)
-       │           │
-       │           ▼
-       │     RAG Pipeline
-       │       ├── Chroma DB (vector search)
-       │       └── Knowledge Graph JSON (keyword search)
+       │      │          │
+       │      │          ▼
+       │      │     Auth (JWT/bcrypt)
+       │      │     SQLite users DB
+       │      │
+       │      ▼
+       │   RAG Pipeline
+       │     ├── Chroma DB (vector search)
+       │     └── Knowledge Graph JSON
        │
        ▼
-  Ollama (port 11434)
-       └── Mistral 7B (local, offline)
+  LLM Backend (choose one)
+       ├── Ollama (local, port 11434)  — offline
+       └── Hugging Face API (cloud)   — serverless
 ```
 
 ---
