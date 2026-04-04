@@ -19,11 +19,9 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Keep axios default header in sync with token
+  // Keep localStorage in sync when token is cleared
   useEffect(() => {
-    if (token) {
-      localStorage.setItem(TOKEN_KEY, token);
-    } else {
+    if (!token) {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
     }
@@ -34,6 +32,9 @@ export function AuthProvider({ children }) {
     setError(null);
     try {
       const data = await loginUser(email, password);
+      // Store token synchronously so the API interceptor picks it up immediately
+      // before any protected route renders and fires API calls.
+      localStorage.setItem(TOKEN_KEY, data.access_token);
       setToken(data.access_token);
       const userInfo = { id: data.user_id, email: data.email };
       setUser(userInfo);
@@ -56,6 +57,9 @@ export function AuthProvider({ children }) {
     setError(null);
     try {
       const data = await signupUser(email, password);
+      // Store token synchronously so the API interceptor picks it up immediately
+      // before any protected route renders and fires API calls.
+      localStorage.setItem(TOKEN_KEY, data.access_token);
       setToken(data.access_token);
       const userInfo = { id: data.user_id, email: data.email };
       setUser(userInfo);
