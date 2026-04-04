@@ -76,9 +76,27 @@ async def lifespan(app: FastAPI):
         if not llm.is_available():
             logger.warning("Ollama is not available — LLM responses will fail until it starts")
         elif not llm.is_model_available():
-            logger.warning(
-                "Model '%s' is not pulled — run: ollama pull %s", llm.model, llm.model
+            logger.info(
+                "Model '%s' not found locally — pulling now (this may take several minutes)…",
+                llm.model,
             )
+            try:
+                import httpx as _httpx
+
+                with _httpx.Client(timeout=600.0) as _client:
+                    _client.post(
+                        f"{llm.base_url}/api/pull",
+                        json={"name": llm.model},
+                        timeout=600.0,
+                    ).raise_for_status()
+                logger.info("Model '%s' pulled successfully", llm.model)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "Auto-pull of model '%s' failed: %s — run 'ollama pull %s' manually",
+                    llm.model,
+                    exc,
+                    llm.model,
+                )
         else:
             logger.info("Ollama + model '%s' ready", llm.model)
 
