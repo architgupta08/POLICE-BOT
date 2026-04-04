@@ -14,7 +14,7 @@ from config import HF_API_TOKEN, HF_MODEL, SYSTEM_PROMPT
 
 logger = logging.getLogger("police_bot.hf_llm")
 
-_HF_BASE = "https://api-inference.huggingface.co/models"
+_HF_BASE = "https://router.huggingface.co/models"
 
 
 class HuggingFaceHandler:
