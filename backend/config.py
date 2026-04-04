@@ -47,7 +47,17 @@ LOG_FILE = os.getenv("LOG_FILE", str(BASE_DIR / "logs" / "police_bot.log"))
 DATABASE_PATH = os.getenv("DATABASE_PATH", str(BASE_DIR / "data" / "police_bot.db"))
 
 # JWT authentication
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", secrets.token_urlsafe(32))
+_jwt_secret_env = os.getenv("JWT_SECRET_KEY", "")
+if _jwt_secret_env:
+    JWT_SECRET_KEY = _jwt_secret_env
+else:
+    import logging as _logging
+    JWT_SECRET_KEY = secrets.token_urlsafe(32)
+    _logging.getLogger("police_bot.config").warning(
+        "JWT_SECRET_KEY is not set — using a random key. "
+        "All sessions will be invalidated on restart. "
+        "Set JWT_SECRET_KEY in your .env file for production."
+    )
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "60"))
 
