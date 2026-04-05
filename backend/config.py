@@ -20,18 +20,7 @@ CASE_HISTORY_DIR = os.getenv("CASE_HISTORY_DIR", str(BASE_DIR / "data" / "case_h
 
 # Ollama settings
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "tinyllama")
-
-# Hugging Face settings
-HF_API_TOKEN = os.getenv("HF_API_TOKEN", "")
-HF_MODEL = os.getenv("HF_MODEL", "mistralai/Mistral-7B-Instruct-v0.2")
-
-# Groq settings
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "qwen/qwen3-32b")
-
-# LLM backend: "ollama" (local), "huggingface" (cloud), or "groq" (cloud)
-LLM_BACKEND = os.getenv("LLM_BACKEND", "ollama")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mistral")
 
 # Chroma settings
 CHROMA_COLLECTION_NAME = os.getenv("CHROMA_COLLECTION_NAME", "ndps_documents")

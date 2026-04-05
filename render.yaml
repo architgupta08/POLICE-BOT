@@ -7,12 +7,10 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: bash backend/start.sh
     envVars:
-      - key: LLM_BACKEND
-        value: groq
-      - key: GROQ_API_KEY
-        sync: false  # Set this in Render dashboard: https://console.groq.com
-      - key: GROQ_MODEL
-        value: mixtral-8x7b-32768
+      - key: OLLAMA_BASE_URL
+        value: http://localhost:11434
+      - key: OLLAMA_MODEL
+        value: mistral
       - key: DEV_MODE
         value: "false"
       - key: JWT_SECRET_KEY
