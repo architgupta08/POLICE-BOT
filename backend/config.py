@@ -28,7 +28,7 @@ HF_MODEL = os.getenv("HF_MODEL", "mistralai/Mistral-7B-Instruct-v0.2")
 
 # Groq settings
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-70b-versatile")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "qwen/qwen3-32b")
 
 # LLM backend: "ollama" (local), "huggingface" (cloud), or "groq" (cloud)
 LLM_BACKEND = os.getenv("LLM_BACKEND", "ollama")
