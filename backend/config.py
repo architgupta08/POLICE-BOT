@@ -26,7 +26,11 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "tinyllama")
 HF_API_TOKEN = os.getenv("HF_API_TOKEN", "")
 HF_MODEL = os.getenv("HF_MODEL", "mistralai/Mistral-7B-Instruct-v0.2")
 
-# LLM backend: "ollama" (local) or "huggingface" (cloud)
+# Groq settings
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "mixtral-8x7b-32768")
+
+# LLM backend: "ollama" (local), "huggingface" (cloud), or "groq" (cloud)
 LLM_BACKEND = os.getenv("LLM_BACKEND", "ollama")
 
 # Chroma settings

@@ -42,6 +42,10 @@ if LLM_BACKEND == "huggingface":
     from hf_handler import HuggingFaceHandler
 
     llm: Any = HuggingFaceHandler()
+elif LLM_BACKEND == "groq":
+    from groq_handler import GroqHandler
+
+    llm = GroqHandler()
 else:
     from llm_handler import OllamaHandler
 
@@ -74,6 +78,11 @@ async def lifespan(app: FastAPI):
             logger.info("Hugging Face LLM backend ready (model: %s)", llm.model)
         else:
             logger.warning("HF_API_TOKEN not set — LLM responses will fail")
+    elif LLM_BACKEND == "groq":
+        if llm.is_available():
+            logger.info("Groq LLM backend ready (model: %s)", llm.model)
+        else:
+            logger.warning("GROQ_API_KEY not set — LLM responses will fail")
     else:
         if not llm.is_available():
             logger.warning("Ollama is not available — LLM responses will fail until it starts")
@@ -309,6 +318,11 @@ async def chat(
             answer += (
                 "Please ensure `HF_API_TOKEN` is set in your environment variables "
                 "and your Hugging Face account has access to the model."
+            )
+        elif LLM_BACKEND == "groq":
+            answer += (
+                "Please ensure `GROQ_API_KEY` is set in your environment variables. "
+                "Get a free key at https://console.groq.com"
             )
         else:
             answer += (
