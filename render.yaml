@@ -13,7 +13,7 @@ services:
       - key: OLLAMA_BASE_URL
         value: http://localhost:11434
       - key: OLLAMA_MODEL
-        value: mistral
+        value: tinyllama
       - key: DEV_MODE
         value: "false"
       - key: JWT_SECRET_KEY

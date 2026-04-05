@@ -71,6 +71,12 @@ class OllamaHandler:
                 "Please start it with: ollama serve"
             )
 
+        if not self.is_model_available():
+            raise RuntimeError(
+                f"Model '{self.model}' is not yet available. "
+                f"It may still be downloading. Please run: ollama pull {self.model}"
+            )
+
         messages = self._build_messages(prompt, context, chat_history or [])
 
         payload = {
@@ -114,6 +120,12 @@ class OllamaHandler:
         """
         if not self.is_available():
             raise RuntimeError("Ollama server is not running.")
+
+        if not self.is_model_available():
+            raise RuntimeError(
+                f"Model '{self.model}' is not yet available. "
+                f"It may still be downloading. Please run: ollama pull {self.model}"
+            )
 
         messages = self._build_messages(prompt, context, chat_history or [])
 

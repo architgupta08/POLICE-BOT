@@ -20,7 +20,7 @@ CASE_HISTORY_DIR = os.getenv("CASE_HISTORY_DIR", str(BASE_DIR / "data" / "case_h
 
 # Ollama settings
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mistral")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "tinyllama")
 
 # Hugging Face settings
 HF_API_TOKEN = os.getenv("HF_API_TOKEN", "")
