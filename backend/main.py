@@ -17,8 +17,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 
 from auth import create_access_token, get_current_user, hash_password, verify_password
-from config import CORS_ORIGINS, DEV_MODE, LLM_BACKEND
+from config import CORS_ORIGINS, DEV_MODE
 from database import create_user, get_user_by_email, init_db
+from llm_handler import OllamaHandler
 from rag_pipeline import RAGPipeline
 from utils import (
     delete_chat_session,
@@ -37,19 +38,7 @@ from utils import (
 rag: RAGPipeline = RAGPipeline()
 logger = logging.getLogger("police_bot.api")
 
-# LLM handler — chosen based on LLM_BACKEND config
-if LLM_BACKEND == "huggingface":
-    from hf_handler import HuggingFaceHandler
-
-    llm: Any = HuggingFaceHandler()
-elif LLM_BACKEND == "groq":
-    from groq_handler import GroqHandler
-
-    llm = GroqHandler()
-else:
-    from llm_handler import OllamaHandler
-
-    llm = OllamaHandler()
+llm: OllamaHandler = OllamaHandler()
 
 
 # ---------------------------------------------------------------------------
@@ -73,40 +62,29 @@ async def lifespan(app: FastAPI):
     except Exception as exc:  # noqa: BLE001
         logger.error("RAG pipeline initialization failed: %s", exc)
 
-    if LLM_BACKEND == "huggingface":
-        if llm.is_available():
-            logger.info("Hugging Face LLM backend ready (model: %s)", llm.model)
-        else:
-            logger.warning("HF_API_TOKEN not set — LLM responses will fail")
-    elif LLM_BACKEND == "groq":
-        if llm.is_available():
-            logger.info("Groq LLM backend ready (model: %s)", llm.model)
-        else:
-            logger.warning("GROQ_API_KEY not set — LLM responses will fail")
-    else:
-        if not llm.is_available():
-            logger.warning("Ollama is not available — LLM responses will fail until it starts")
-        elif not llm.is_model_available():
-            logger.info(
-                "Model '%s' not found locally — pulling now (this may take several minutes)…",
+    if not llm.is_available():
+        logger.warning("Ollama is not available — LLM responses will fail until it starts")
+    elif not llm.is_model_available():
+        logger.info(
+            "Model '%s' not found locally — pulling now (this may take several minutes)…",
+            llm.model,
+        )
+        try:
+            with httpx.Client(timeout=600.0) as _client:
+                _client.post(
+                    f"{llm.base_url}/api/pull",
+                    json={"name": llm.model},
+                ).raise_for_status()
+            logger.info("Model '%s' pulled successfully", llm.model)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "Auto-pull of model '%s' failed: %s — run 'ollama pull %s' manually",
+                llm.model,
+                exc,
                 llm.model,
             )
-            try:
-                with httpx.Client(timeout=600.0) as _client:
-                    _client.post(
-                        f"{llm.base_url}/api/pull",
-                        json={"name": llm.model},
-                    ).raise_for_status()
-                logger.info("Model '%s' pulled successfully", llm.model)
-            except Exception as exc:  # noqa: BLE001
-                logger.warning(
-                    "Auto-pull of model '%s' failed: %s — run 'ollama pull %s' manually",
-                    llm.model,
-                    exc,
-                    llm.model,
-                )
-        else:
-            logger.info("Ollama + model '%s' ready", llm.model)
+    else:
+        logger.info("Ollama + model '%s' ready", llm.model)
 
     if DEV_MODE:
         logger.warning(
@@ -211,7 +189,7 @@ async def root() -> dict[str, str]:
 async def health() -> dict[str, Any]:
     return {
         "status": "ok",
-        "llm_backend": LLM_BACKEND,
+        "llm_backend": "ollama",
         "llm_available": llm.is_available(),
         "model_available": llm.is_model_available(),
         "rag_status": rag.get_status(),
@@ -313,22 +291,9 @@ async def chat(
         answer = (
             f"⚠️ I could not generate a response at this time.\n\n"
             f"**Reason:** {exc}\n\n"
+            "Please ensure Ollama is running (`ollama serve`) and the model "
+            f"is pulled (`ollama pull {llm.model}`)."
         )
-        if LLM_BACKEND == "huggingface":
-            answer += (
-                "Please ensure `HF_API_TOKEN` is set in your environment variables "
-                "and your Hugging Face account has access to the model."
-            )
-        elif LLM_BACKEND == "groq":
-            answer += (
-                "Please ensure `GROQ_API_KEY` is set in your environment variables. "
-                "Get a free key at https://console.groq.com"
-            )
-        else:
-            answer += (
-                "Please ensure Ollama is running (`ollama serve`) and the Mistral model "
-                f"is pulled (`ollama pull {llm.model}`)."
-            )
         sources = []
 
     # Store assistant response

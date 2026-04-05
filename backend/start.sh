@@ -3,10 +3,8 @@
 # Render / production startup script for POLICE-BOT backend.
 #
 # Starts the FastAPI server with uvicorn.
-# The LLM backend is configured via the LLM_BACKEND environment variable:
-#   - "groq"        (default) — Groq Cloud API, requires GROQ_API_KEY
-#   - "huggingface" — Hugging Face Inference API, requires HF_API_TOKEN
-#   - "ollama"      — Local Ollama server (for local development only)
+# The backend uses Ollama exclusively for LLM inference.
+# Configure OLLAMA_BASE_URL and OLLAMA_MODEL via environment variables.
 # ---------------------------------------------------------------------------
 
 # Change to the backend directory so Python imports resolve correctly

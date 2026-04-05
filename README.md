@@ -1,6 +1,6 @@
 # 🚔 POLICE-BOT — NDPS Legal Guidance System
 
-A fully-functional AI-powered web application that provides **real-time legal guidance** to police officers on the **Narcotic Drugs and Psychotropic Substances (NDPS) Act** of India.  The system supports both local (Ollama) and cloud (Hugging Face) LLM backends, JWT-based user authentication, and one-click deployment to **Render + Vercel**.
+A fully-functional AI-powered web application that provides **real-time legal guidance** to police officers on the **Narcotic Drugs and Psychotropic Substances (NDPS) Act** of India.  The system uses a local **Ollama** LLM backend for reliable, rate-limit-free operation, a JWT-based authentication system, and supports deployment to **Render + Vercel** when an accessible Ollama server is available.
 
 ---
 
@@ -10,7 +10,7 @@ A fully-functional AI-powered web application that provides **real-time legal gu
 |---|---|
 | 💬 **Conversational Chat** | Ask questions in plain language and get structured, legal answers |
 | 📚 **RAG Pipeline** | Retrieves the most relevant NDPS documents from your knowledge base before answering |
-| 🧠 **Dual LLM Backend** | Local Ollama (offline) **or** Hugging Face Inference API (cloud) |
+| 🧠 **Ollama LLM Backend** | Local Ollama inference — no API keys, no rate limits, full control |
 | 🔐 **JWT Authentication** | User signup/login with bcrypt password hashing and JWT sessions |
 | 📋 **Case History** | All sessions are saved automatically; switch between them from the sidebar |
 | 📄 **PDF Export** | Export any conversation as a formatted PDF for official records |
@@ -27,8 +27,7 @@ POLICE-BOT/
 │   ├── main.py            # FastAPI application + API routes
 │   ├── auth.py            # JWT utilities + FastAPI dependency
 │   ├── database.py        # SQLite user database
-│   ├── hf_handler.py      # Hugging Face Inference API LLM handler
-│   ├── llm_handler.py     # Ollama / Mistral 7B handler (local)
+│   ├── llm_handler.py     # Ollama LLM handler
 │   ├── rag_pipeline.py    # RAG logic: Chroma DB + knowledge-graph retrieval
 │   ├── config.py          # All configuration (reads from .env)
 │   └── utils.py           # PDF export, session helpers, logging
@@ -68,9 +67,18 @@ POLICE-BOT/
 |---|---|---|
 | Python | 3.10 + | https://python.org |
 | Node.js | 18 + | https://nodejs.org |
-| Ollama | latest (optional) | https://ollama.ai/download |
+| Ollama | latest | https://ollama.ai/download |
 
-### Step 1 — Copy your data files
+### Step 1 — Install and start Ollama
+
+1. Download and install Ollama from https://ollama.ai/download
+2. Open the Ollama app (or run `ollama serve` in a terminal)
+3. Pull a model:
+   ```bash
+   ollama pull mistral
+   ```
+
+### Step 2 — Copy your data files
 
 ```bash
 # Linux / macOS
@@ -82,19 +90,19 @@ xcopy /E /I "D:\POLICE BOT\chroma_db" "data\chroma_db"
 copy "D:\POLICE BOT\knowledge_graph.json" "data\knowledge_graph.json"
 ```
 
-### Step 2 — Configure environment
+### Step 3 — Configure environment
 
 ```bash
 cp .env.example .env
-# Edit .env — set LLM_BACKEND, JWT_SECRET_KEY, and optionally HF_API_TOKEN
+# Edit .env — set JWT_SECRET_KEY and optionally OLLAMA_MODEL
 ```
 
-### Step 3 — Run setup
+### Step 4 — Run setup
 
 **Windows:** `setup.bat`  
 **Linux / macOS:** `chmod +x setup.sh && ./setup.sh`
 
-### Step 4 — Start services
+### Step 5 — Start services
 
 **Terminal 1 — Backend:**
 ```bash
@@ -121,9 +129,13 @@ Open **http://localhost:3000** — sign up for an account to start chatting. �
 
 1. Create a free account at https://render.com and link your GitHub repo.
 2. Render will auto-detect `render.yaml` and create the service.
-3. In the Render dashboard → **Environment** tab, add:
-   - `HF_API_TOKEN` — your Hugging Face token (https://huggingface.co/settings/tokens)
-4. Your backend URL will be: `https://police-bot-backend.onrender.com`
+3. You need an **Ollama server that is publicly accessible** from Render. Options:
+   - Run Ollama on a VPS or cloud VM (DigitalOcean, EC2, etc.) and expose port `11434`.
+   - Use a GPU hosting service (e.g. RunPod) and run `ollama serve`.
+4. In the Render dashboard → **Environment** tab, set `OLLAMA_BASE_URL` to your Ollama server's public URL (e.g. `http://your-server-ip:11434`).
+5. Your backend URL will be: `https://police-bot-backend.onrender.com`
+
+> ⚠️ **Note:** Render's cloud servers cannot reach a local Ollama instance running on your personal machine. You must host Ollama on a server with a public IP address for production deployments.
 
 ### Frontend → Vercel
 
@@ -162,11 +174,8 @@ Update `render.yaml` → `CORS_ORIGINS` to your Vercel URL, then redeploy the ba
 
 | Variable | Default | Description |
 |---|---|---|
-| `LLM_BACKEND` | `ollama` | `ollama` (local) or `huggingface` (cloud) |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server URL |
 | `OLLAMA_MODEL` | `mistral` | Ollama model name |
-| `HF_API_TOKEN` | *(empty)* | Hugging Face API token (cloud) |
-| `HF_MODEL` | `mistralai/Mistral-7B-Instruct-v0.2` | HF model ID |
 | `JWT_SECRET_KEY` | auto-generated | Secret for signing JWT tokens |
 | `JWT_EXPIRE_MINUTES` | `60` | Token expiry in minutes |
 | `DEV_MODE` | `true` | If `true`, auth is optional (local dev only) |
@@ -182,10 +191,10 @@ Update `render.yaml` → `CORS_ORIGINS` to your Vercel URL, then redeploy the ba
 ## 🔧 Troubleshooting
 
 ### "Ollama server is not running"
-Start it: `ollama serve`
+Start it: `ollama serve` (or open the Ollama desktop app)
 
-### "HF_API_TOKEN is not set"
-Add your Hugging Face token to `.env` or to Render's environment variables.
+### "Model not found"
+Pull the model first: `ollama pull mistral`
 
 ### Backend shows "0 documents in Chroma DB"
 - Make sure you copied the `chroma_db` folder correctly.
@@ -198,7 +207,7 @@ Add your Hugging Face token to `.env` or to Render's environment variables.
 
 ### Slow responses (8 GB RAM + Ollama)
 - Mistral 7B uses ≈5–6 GB RAM; close other applications.
-- Or switch to `LLM_BACKEND=huggingface` for serverless inference.
+- For lower-RAM machines, use `OLLAMA_MODEL=tinyllama` in your `.env`.
 
 ---
 
@@ -220,9 +229,8 @@ Add your Hugging Face token to `.env` or to Render's environment variables.
        │     └── Knowledge Graph JSON
        │
        ▼
-  LLM Backend (choose one)
-       ├── Ollama (local, port 11434)  — offline
-       └── Hugging Face API (cloud)   — serverless
+  Ollama (local, port 11434)
+  └── Mistral / tinyllama / any model
 ```
 
 ---
